@@ -12,6 +12,7 @@ import (
 	"kasir-api/handlers"
 	"kasir-api/repositories"
 	"kasir-api/services"
+	"kasir-api/middleware"
 )
 
 type Config struct {
@@ -53,6 +54,12 @@ func main(){
 	http.HandleFunc("/api/categories", categoryHandler.HandleCategory)
 	http.HandleFunc("/api/categories/", categoryHandler.HandleCategoryByID)
 	
+	transactionRepo := repositories.NewTransactionRepository(db)
+	transactionService := services.NewTransactionService(transactionRepo)
+	transactionHandler := handlers.NewTransactionHandler(transactionService)
+
+	http.HandleFunc("/api/checkout", transactionHandler.HandleCheckout) // POST
+
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request){
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{
@@ -64,7 +71,9 @@ func main(){
 	addr := "0.0.0.0:" + config.Port
 	fmt.Println("Server running di", addr)
 
-	err = http.ListenAndServe(addr, nil)
+	handlerWithCORS := middleware.EnableCORS(http.DefaultServeMux)
+
+	err = http.ListenAndServe(addr, handlerWithCORS)
 	if err != nil {
 		fmt.Println("gagal running server", err)
 	}

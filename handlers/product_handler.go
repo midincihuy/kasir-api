@@ -31,7 +31,9 @@ func (h *ProductHandler) HandleProducts(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *ProductHandler) GetAll(w http.ResponseWriter, r *http.Request) {
-	products, err := h.service.GetAll()
+	name := r.URL.Query().Get("name")
+	active := r.URL.Query().Get("active")
+	products, err := h.service.GetAll(name, active)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
