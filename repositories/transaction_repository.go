@@ -66,15 +66,47 @@ func (repo *TransactionRepository) CreateTransaction(items []models.CheckoutItem
 		return nil, err
 	}
 
-	for i, detail := range details {
-		details[i].TransactionID = transactionID
-		_, err := tx.Exec("INSERT INTO transaction_details (transaction_id, product_id, quantity, subtotal) VALUES ($1, $2, $3, $4)", transactionID, detail.ProductID, detail.Quantity, detail.Subtotal)
+	// for i, detail := range details {
+	// 	details[i].TransactionID = transactionID
+	// 	_, err := tx.Exec("INSERT INTO transaction_details (transaction_id, product_id, quantity, subtotal) VALUES ($1, $2, $3, $4)", transactionID, detail.ProductID, detail.Quantity, detail.Subtotal)
 		
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// }
+
+	
+	stmt, err := tx.Prepare(`
+		INSERT INTO transaction_details 
+		(transaction_id, product_id, quantity, subtotal) 
+		VALUES ($1, $2, $3, $4)
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+	for _, d := range details {
+		d.TransactionID = transactionID
+
+		res, err := stmt.Exec(
+			d.TransactionID,
+			d.ProductID,
+			d.Quantity,
+			d.Subtotal,
+		)
 		if err != nil {
 			return nil, err
 		}
-	}
 
+		rows, err := res.RowsAffected()
+		if err != nil {
+			return nil, err
+		}
+		if rows == 0 {
+			return nil, fmt.Errorf("failed to insert transaction detail for product_id %d", d.ProductID)
+		}
+	}
+	
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
