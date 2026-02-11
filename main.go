@@ -16,8 +16,10 @@ import (
 )
 
 type Config struct {
-	Port	string	`mapstructure:"PORT"`
-	DBConn	string	`mapstructure:"DB_CONN"`
+	Port			string	`mapstructure:"PORT"`
+	DBConn			string	`mapstructure:"DB_CONN"`
+	APIKey  		string 	`mapstructure:"API_KEY"`
+	AllowedOrigins 	string 	`mapstructure:"ALLOWED_ORIGINS"`
 }
 
 func main(){
@@ -30,8 +32,10 @@ func main(){
 	}
 
 	config := Config{
-		Port: viper.GetString("PORT"),
-		DBConn: viper.GetString("DB_CONN"),
+		Port: 			viper.GetString("PORT"),
+		DBConn: 		viper.GetString("DB_CONN"),
+		APIKey: 		viper.GetString("API_KEY"),
+		AllowedOrigins: viper.GetString("ALLOWED_ORIGINS"),
 	}
 
 	db, err := database.InitDB(config.DBConn)
@@ -79,9 +83,10 @@ func main(){
 	addr := "0.0.0.0:" + config.Port
 	fmt.Println("Server running di", addr)
 
-	handlerWithCORS := middleware.EnableCORS(http.DefaultServeMux)
+	handler := middleware.EnableCORS(config.AllowedOrigins, http.DefaultServeMux)
+	handler = middleware.APIKeyMiddleware(config.APIKey, handler)
 
-	err = http.ListenAndServe(addr, handlerWithCORS)
+	err = http.ListenAndServe(addr, handler)
 	if err != nil {
 		fmt.Println("gagal running server", err)
 	}
