@@ -1,6 +1,9 @@
 package middleware
 
-import "net/http"
+import (
+	"net/http"
+	"strings"
+)
 
 func EnableCORS(allowedOrigins string, next http.Handler) http.Handler {
 	origins := strings.Split(allowedOrigins, ",")
